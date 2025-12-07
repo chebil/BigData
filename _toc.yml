@@ -1,6 +1,6 @@
+# Table of Contents
 format: jb-book
-root: index
-title: Big Data Analytics
+root: README
 
 parts:
   - caption: Course Information
@@ -21,6 +21,8 @@ parts:
           - file: 01-introduction/02-data-analytics-lifecycle
           - file: 01-introduction/03-data-types
           - file: 01-introduction/04-case-studies
+          - file: 01-introduction/notebooks/01-data-exploration
+          - file: 01-introduction/exercises/chapter-01-exercises
 
       - file: 02-data-analytics-lifecycle/index
         title: "Chapter 2: Data Analytics Lifecycle"
@@ -34,30 +36,171 @@ parts:
 
       - file: 03-statistical-foundations/index
         title: "Chapter 3: Statistical Foundations with Python"
+        sections:
+          - file: 03-statistical-foundations/01-intro-to-python
+          - file: 03-statistical-foundations/02-numpy-pandas
+          - file: 03-statistical-foundations/03-descriptive-statistics
+          - file: 03-statistical-foundations/04-data-visualization
+          - file: 03-statistical-foundations/05-hypothesis-testing
+          - file: 03-statistical-foundations/06-anova
+          - file: 03-statistical-foundations/notebooks/01-python-basics
+          - file: 03-statistical-foundations/notebooks/02-pandas-fundamentals
+          - file: 03-statistical-foundations/notebooks/03-exploratory-analysis
+          - file: 03-statistical-foundations/notebooks/04-visualization-gallery
+          - file: 03-statistical-foundations/notebooks/05-statistical-tests
 
   - caption: Part II - Machine Learning Methods
     chapters:
       - file: 04-clustering/index
         title: "Chapter 4: Clustering Analysis"
+        sections:
+          - file: 04-clustering/01-unsupervised-learning
+          - file: 04-clustering/02-kmeans-algorithm
+          - file: 04-clustering/03-hierarchical-clustering
+          - file: 04-clustering/04-dbscan
+          - file: 04-clustering/05-cluster-validation
+          - file: 04-clustering/notebooks/01-kmeans-implementation
+          - file: 04-clustering/notebooks/02-elbow-method
+          - file: 04-clustering/notebooks/03-cluster-visualization
+          - file: 04-clustering/notebooks/04-customer-segmentation
+
       - file: 05-association-rules/index
         title: "Chapter 5: Association Rules Mining"
+        sections:
+          - file: 05-association-rules/01-market-basket-analysis
+          - file: 05-association-rules/02-apriori-algorithm
+          - file: 05-association-rules/03-metrics
+          - file: 05-association-rules/notebooks/01-association-mining
+          - file: 05-association-rules/notebooks/02-retail-recommendations
+
       - file: 06-regression/index
         title: "Chapter 6: Regression Analysis"
+        sections:
+          - file: 06-regression/01-linear-regression
+          - file: 06-regression/02-multiple-regression
+          - file: 06-regression/03-model-evaluation
+          - file: 06-regression/04-regularization
+          - file: 06-regression/notebooks/01-simple-linear-regression
+          - file: 06-regression/notebooks/02-multiple-regression
+          - file: 06-regression/notebooks/03-polynomial-regression
+          - file: 06-regression/notebooks/04-regularization-techniques
+
       - file: 07-classification/index
         title: "Chapter 7: Classification Methods"
+        sections:
+          - file: 07-classification/01-logistic-regression
+          - file: 07-classification/02-naive-bayes
+          - file: 07-classification/03-decision-trees
+          - file: 07-classification/04-random-forests
+          - file: 07-classification/05-svm
+          - file: 07-classification/06-model-evaluation
+          - file: 07-classification/notebooks/01-logistic-regression
+          - file: 07-classification/notebooks/02-naive-bayes-classifier
+          - file: 07-classification/notebooks/03-decision-trees
+          - file: 07-classification/notebooks/04-ensemble-methods
+          - file: 07-classification/notebooks/05-model-comparison
+          - file: 07-classification/notebooks/06-cross-validation
+
       - file: 08-time-series/index
         title: "Chapter 8: Time Series Analysis"
+        sections:
+          - file: 08-time-series/01-time-series-concepts
+          - file: 08-time-series/02-stationarity
+          - file: 08-time-series/03-arima-models
+          - file: 08-time-series/04-forecasting
+          - file: 08-time-series/05-prophet-statsmodels
+          - file: 08-time-series/notebooks/01-time-series-basics
+          - file: 08-time-series/notebooks/02-arima-modeling
+          - file: 08-time-series/notebooks/03-seasonal-decomposition
+          - file: 08-time-series/notebooks/04-prophet-forecasting
+
       - file: 09-text-analytics/index
         title: "Chapter 9: Text Analytics"
+        sections:
+          - file: 09-text-analytics/01-text-preprocessing
+          - file: 09-text-analytics/02-tfidf
+          - file: 09-text-analytics/03-topic-modeling
+          - file: 09-text-analytics/04-sentiment-analysis
+          - file: 09-text-analytics/05-word-embeddings
+          - file: 09-text-analytics/notebooks/01-text-cleaning
+          - file: 09-text-analytics/notebooks/02-tfidf-implementation
+          - file: 09-text-analytics/notebooks/03-lda-topic-modeling
+          - file: 09-text-analytics/notebooks/04-sentiment-classification
+          - file: 09-text-analytics/notebooks/05-word2vec-basics
 
   - caption: Part III - Big Data Technologies
     chapters:
       - file: 10-distributed-computing/index
         title: "Chapter 10: Distributed Computing"
+        sections:
+          - file: 10-distributed-computing/01-hadoop-ecosystem
+          - file: 10-distributed-computing/02-hdfs-architecture
+          - file: 10-distributed-computing/03-mapreduce-paradigm
+          - file: 10-distributed-computing/04-apache-spark
+          - file: 10-distributed-computing/05-pyspark-basics
+          - file: 10-distributed-computing/06-spark-sql
+          - file: 10-distributed-computing/07-spark-mllib
+          - file: 10-distributed-computing/notebooks/01-pyspark-setup
+          - file: 10-distributed-computing/notebooks/02-spark-dataframes
+          - file: 10-distributed-computing/notebooks/03-spark-sql-queries
+          - file: 10-distributed-computing/notebooks/04-spark-mllib-ml
+          - file: 10-distributed-computing/notebooks/05-distributed-ml
+
       - file: 11-advanced-topics/index
         title: "Chapter 11: Advanced Topics"
+        sections:
+          - file: 11-advanced-topics/01-deep-learning-basics
+          - file: 11-advanced-topics/02-neural-networks
+          - file: 11-advanced-topics/03-cnn-intro
+          - file: 11-advanced-topics/04-model-deployment
+          - file: 11-advanced-topics/05-cloud-platforms
+          - file: 11-advanced-topics/notebooks/01-neural-networks-keras
+          - file: 11-advanced-topics/notebooks/02-image-classification
+          - file: 11-advanced-topics/notebooks/03-model-deployment-flask
+          - file: 11-advanced-topics/notebooks/04-cloud-ml-basics
 
   - caption: Hands-On Labs
     chapters:
       - file: labs/README
         title: "Labs Overview"
+      - file: labs/lab-00-environment-setup/README
+        title: "Lab 0: Environment Setup"
+      - file: labs/lab-01-data-exploration/README
+        title: "Lab 1: Data Exploration"
+      - file: labs/lab-02-python-pandas/README
+        title: "Lab 2: Python & Pandas"
+      - file: labs/lab-03-statistics-visualization/README
+        title: "Lab 3: Statistics & Visualization"
+      - file: labs/lab-04-clustering/README
+        title: "Lab 4: Clustering"
+      - file: labs/lab-05-association-rules/README
+        title: "Lab 5: Association Rules"
+      - file: labs/lab-06-regression/README
+        title: "Lab 6: Regression"
+      - file: labs/lab-07-classification/README
+        title: "Lab 7: Classification"
+      - file: labs/lab-08-time-series/README
+        title: "Lab 8: Time Series"
+      - file: labs/lab-09-text-analytics/README
+        title: "Lab 9: Text Analytics"
+      - file: labs/lab-10-spark/README
+        title: "Lab 10: Apache Spark"
+      - file: labs/lab-11-capstone-project/README
+        title: "Lab 11: Capstone Project"
+
+  - caption: Resources
+    chapters:
+      - file: tutorials/git-basics
+        title: "Git Basics"
+      - file: tutorials/jupyter-tips
+        title: "Jupyter Tips"
+      - file: tutorials/python-cheatsheet
+        title: "Python Cheatsheet"
+      - file: tutorials/docker-tutorial
+        title: "Docker Tutorial"
+      - file: appendix/glossary
+        title: "Glossary"
+      - file: appendix/common-errors
+        title: "Troubleshooting"
+      - file: appendix/bibliography
+        title: "Bibliography"
