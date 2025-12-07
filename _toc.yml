@@ -1,0 +1,63 @@
+format: jb-book
+root: index
+title: Big Data Analytics
+
+parts:
+  - caption: Course Information
+    chapters:
+      - file: 00-syllabus/index
+        sections:
+          - file: 00-syllabus/schedule
+          - file: 00-syllabus/grading
+          - file: 00-syllabus/prerequisites
+          - file: 00-syllabus/resources
+
+  - caption: Part I - Foundations
+    chapters:
+      - file: 01-introduction/index
+        title: "Chapter 1: Introduction to Big Data"
+        sections:
+          - file: 01-introduction/01-what-is-bigdata
+          - file: 01-introduction/02-data-analytics-lifecycle
+          - file: 01-introduction/03-data-types
+          - file: 01-introduction/04-case-studies
+
+      - file: 02-data-analytics-lifecycle/index
+        title: "Chapter 2: Data Analytics Lifecycle"
+        sections:
+          - file: 02-data-analytics-lifecycle/01-discovery
+          - file: 02-data-analytics-lifecycle/02-data-preparation
+          - file: 02-data-analytics-lifecycle/03-model-planning
+          - file: 02-data-analytics-lifecycle/04-model-building
+          - file: 02-data-analytics-lifecycle/05-communication
+          - file: 02-data-analytics-lifecycle/06-operationalization
+
+      - file: 03-statistical-foundations/index
+        title: "Chapter 3: Statistical Foundations with Python"
+
+  - caption: Part II - Machine Learning Methods
+    chapters:
+      - file: 04-clustering/index
+        title: "Chapter 4: Clustering Analysis"
+      - file: 05-association-rules/index
+        title: "Chapter 5: Association Rules Mining"
+      - file: 06-regression/index
+        title: "Chapter 6: Regression Analysis"
+      - file: 07-classification/index
+        title: "Chapter 7: Classification Methods"
+      - file: 08-time-series/index
+        title: "Chapter 8: Time Series Analysis"
+      - file: 09-text-analytics/index
+        title: "Chapter 9: Text Analytics"
+
+  - caption: Part III - Big Data Technologies
+    chapters:
+      - file: 10-distributed-computing/index
+        title: "Chapter 10: Distributed Computing"
+      - file: 11-advanced-topics/index
+        title: "Chapter 11: Advanced Topics"
+
+  - caption: Hands-On Labs
+    chapters:
+      - file: labs/README
+        title: "Labs Overview"

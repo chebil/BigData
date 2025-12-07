@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  jupyter:
+    build: .
+    container_name: bigdata-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/workspace
+      - ./datasets:/workspace/datasets
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    networks:
+      - bigdata-network
+
+  spark-master:
+    image: bitnami/spark:3.4
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - bigdata-network
+
+  spark-worker:
+    image: bitnami/spark:3.4
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+    depends_on:
+      - spark-master
+    networks:
+      - bigdata-network
+
+  postgres:
+    image: postgres:15
+    container_name: bigdata-postgres
+    environment:
+      - POSTGRES_USER=student
+      - POSTGRES_PASSWORD=bigdata2025
+      - POSTGRES_DB=analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - bigdata-network
+
+networks:
+  bigdata-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

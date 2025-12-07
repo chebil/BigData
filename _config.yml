@@ -1,0 +1,79 @@
+# Jupyter Book Configuration
+title: "Big Data Analytics"
+author: "Dr. Chebil Khalil, PSAU"
+logo: assets/logo.png
+copyright: "2025"
+
+execute:
+  execute_notebooks: cache
+  timeout: 300
+  allow_errors: false
+
+repository:
+  url: https://github.com/chebil/BigData
+  path_to_book: ""
+  branch: main
+
+html:
+  favicon: assets/favicon.ico
+  use_edit_page_button: true
+  use_repository_button: true
+  use_issues_button: true
+  extra_navbar: |
+    <div>
+      Course Materials for Big Data Analytics - PSAU
+    </div>
+  google_analytics_id: ""
+  home_page_in_navbar: true
+  baseurl: ""
+  comments:
+    hypothesis: false
+    utterances: false
+
+launch_buttons:
+  notebook_interface: jupyterlab
+  binderhub_url: ""
+  colab_url: "https://colab.research.google.com"
+  thebe: false
+
+parse:
+  myst_enable_extensions:
+    - amsmath
+    - colon_fence
+    - deflist
+    - dollarmath
+    - html_admonition
+    - html_image
+    - linkify
+    - replacements
+    - smartquotes
+    - substitution
+    - tasklist
+
+sphinx:
+  extra_extensions:
+    - sphinx_proof
+    - sphinx_examples
+    - sphinx_tabs.tabs
+    - sphinx_copybutton
+    - sphinxcontrib.mermaid
+    - sphinx_togglebutton
+  config:
+    nb_custom_formats:
+      .Rmd:
+        - jupytext.reads
+        - fmt: Rmd
+    html_theme_options:
+      logo_only: false
+      show_toc_level: 2
+    myst_heading_anchors: 3
+    copybutton_prompt_text: ">>> |\\$ |In \\[\\d+\\]: "
+    copybutton_prompt_is_regexp: true
+
+bibtex_bibfiles:
+  - references.bib
+
+latex:
+  latex_engine: xelatex
+  latex_documents:
+    targetname: book.tex
