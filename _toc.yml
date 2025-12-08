@@ -38,67 +38,59 @@ parts:
       - file: 03-clustering/index
         title: "Chapter 3: Clustering Analysis"
         sections:
-          - file: 03-clustering/01-introduction
-          - file: 03-clustering/02-kmeans
-          - file: 03-clustering/03-hierarchical
-          - file: 03-clustering/04-dbscan
-          - file: 03-clustering/05-evaluation
+          - file: 03-clustering/01-kmeans
+          - file: 03-clustering/02-hierarchical
+          - file: 03-clustering/03-dbscan
+          - file: 03-clustering/04-evaluation-metrics
+          - file: 03-clustering/05-practical-applications
 
       - file: 04-classification/index
         title: "Chapter 4: Classification Methods"
         sections:
           - file: 04-classification/01-logistic-regression
-          - file: 04-classification/02-naive-bayes
-          - file: 04-classification/03-decision-trees
-          - file: 04-classification/04-random-forests
-          - file: 04-classification/05-svm
-          - file: 04-classification/06-model-evaluation
+          - file: 04-classification/02-decision-trees
+          - file: 04-classification/03-random-forests
+          - file: 04-classification/04-evaluation-metrics
 
       - file: 05-regression/index
         title: "Chapter 5: Regression Analysis"
         sections:
-          - file: 05-regression/01-introduction
-          - file: 05-regression/02-simple-linear
-          - file: 05-regression/03-multiple-regression
-          - file: 05-regression/04-polynomial
-          - file: 05-regression/05-regularization
-          - file: 05-regression/06-diagnostics
+          - file: 05-regression/01-linear-regression
+          - file: 05-regression/02-polynomial-regression
+          - file: 05-regression/03-regularization
+          - file: 05-regression/04-regression-diagnostics
 
       - file: 06-association-rules/index
         title: "Chapter 6: Association Rules Mining"
         sections:
-          - file: 06-association-rules/01-introduction
-          - file: 06-association-rules/02-apriori
+          - file: 06-association-rules/01-market-basket-analysis
+          - file: 06-association-rules/02-apriori-algorithm
           - file: 06-association-rules/03-fp-growth
-          - file: 06-association-rules/04-applications
 
       - file: 07-model-selection/index
         title: "Chapter 7: Model Selection & Evaluation"
         sections:
-          - file: 07-model-selection/01-introduction
-          - file: 07-model-selection/02-cross-validation
-          - file: 07-model-selection/03-hyperparameter-tuning
-          - file: 07-model-selection/04-model-comparison
-          - file: 07-model-selection/05-pipelines
+          - file: 07-model-selection/01-model-evaluation
+          - file: 07-model-selection/02-hyperparameter-tuning
+          - file: 07-model-selection/03-ml-pipelines
 
       - file: 08-time-series/index
         title: "Chapter 8: Time Series Analysis"
         sections:
-          - file: 08-time-series/01-introduction
-          - file: 08-time-series/02-components
+          - file: 08-time-series/01-time-series-fundamentals
+          - file: 08-time-series/02-time-series-decomposition
           - file: 08-time-series/03-arima-models
-          - file: 08-time-series/04-sarima
-          - file: 08-time-series/05-prophet
-          - file: 08-time-series/06-production
+          - file: 08-time-series/04-forecasting-methods
+          - file: 08-time-series/05-production-deployment
 
       - file: 09-text-analytics/index
         title: "Chapter 9: Text Analytics & NLP"
         sections:
           - file: 09-text-analytics/01-text-preprocessing
-          - file: 09-text-analytics/02-feature-extraction
-          - file: 09-text-analytics/03-sentiment-analysis
-          - file: 09-text-analytics/04-topic-modeling
-          - file: 09-text-analytics/05-applications
+          - file: 09-text-analytics/02-text-representation
+          - file: 09-text-analytics/03-text-classification
+          - file: 09-text-analytics/04-sentiment-analysis
+          - file: 09-text-analytics/05-topic-modeling
 
   - caption: Part III - Big Data Technologies
     chapters:
@@ -129,9 +121,9 @@ parts:
         title: "Lab 6: Association Rules - Market Basket"
       - file: labs/07-model-selection-lab/README
         title: "Lab 7: Model Selection & Tuning"
-      - file: labs/08-time-series-lab/README
+      - file: labs/08-time-series-lab/lab_exercises
         title: "Lab 8: Time Series Forecasting"
-      - file: labs/09-nlp-lab/README
+      - file: labs/09-nlp-lab/lab_exercises
         title: "Lab 9: Text Analytics - Sentiment Analysis"
       - file: labs/CAPSTONE-PROJECT/README
         title: "Capstone Project"
