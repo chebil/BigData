@@ -56,41 +56,36 @@ parts:
         title: "Chapter 5: Regression Analysis"
         sections:
           - file: 05-regression/01-linear-regression
-          - file: 05-regression/02-polynomial-regression
-          - file: 05-regression/03-regularization
-          - file: 05-regression/04-regression-diagnostics
+          - file: 05-regression/02-regularization
+          - file: 05-regression/03-polynomial-regression
 
-      - file: 06-association-rules/index
+      - file: 06-association-rules/01-overview
         title: "Chapter 6: Association Rules Mining"
         sections:
-          - file: 06-association-rules/01-market-basket-analysis
           - file: 06-association-rules/02-apriori-algorithm
           - file: 06-association-rules/03-fp-growth
+          - file: 06-association-rules/04-market-basket-analysis
 
-      - file: 07-model-selection/index
+      - file: 07-model-selection/01-cross-validation
         title: "Chapter 7: Model Selection & Evaluation"
         sections:
-          - file: 07-model-selection/01-model-evaluation
           - file: 07-model-selection/02-hyperparameter-tuning
-          - file: 07-model-selection/03-ml-pipelines
+          - file: 07-model-selection/03-model-comparison
 
       - file: 08-time-series/index
         title: "Chapter 8: Time Series Analysis"
         sections:
-          - file: 08-time-series/01-time-series-fundamentals
-          - file: 08-time-series/02-time-series-decomposition
+          - file: 08-time-series/01-fundamentals
+          - file: 08-time-series/02-arima-forecasting
           - file: 08-time-series/03-arima-models
-          - file: 08-time-series/04-forecasting-methods
-          - file: 08-time-series/05-production-deployment
+          - file: 08-time-series/04-seasonal-arima
+          - file: 08-time-series/06-forecasting
 
       - file: 09-text-analytics/index
         title: "Chapter 9: Text Analytics & NLP"
         sections:
           - file: 09-text-analytics/01-text-preprocessing
-          - file: 09-text-analytics/02-text-representation
-          - file: 09-text-analytics/03-text-classification
-          - file: 09-text-analytics/04-sentiment-analysis
-          - file: 09-text-analytics/05-topic-modeling
+          - file: 09-text-analytics/02-tfidf-sentiment-topics
 
   - caption: Part III - Big Data Technologies
     chapters:
