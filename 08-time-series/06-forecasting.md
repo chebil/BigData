@@ -1,635 +1,546 @@
-# Forecasting
+# Time Series Forecasting
 
 ## Introduction
 
-Forecasting is the primary goal of time series analysis. After fitting an ARIMA model, we use it to predict future values with associated uncertainty (confidence intervals).
+Forecasting is the primary goal of time series analysis. After building and validating an ARIMA/SARIMA model, we generate predictions for future values with associated uncertainty (confidence intervals).
 
-**Key concepts**:
-- **Point forecast**: Single predicted value
-- **Interval forecast**: Range of plausible values
-- **Forecast horizon**: How far ahead to predict
-- **Forecast error**: Difference between actual and predicted
+**Key Questions**:
+- How far ahead can we forecast reliably?
+- How do we quantify forecast uncertainty?
+- How do we validate forecast accuracy?
+- When should we update the model?
 
 ## Point Forecasts
 
-### One-Step-Ahead Forecast
+### h-Step Ahead Forecast
 
-**Simplest case**: Predict next value
-
-For ARIMA(p,d,q), the forecast is:
+**Forecast at time \(t\) for \(t+h\)**:
 
 \[
-\hat{y}_{t+1} = \phi_1 y_t + \phi_2 y_{t-1} + ... + \phi_p y_{t-p+1} + \theta_1 \epsilon_t + ... + \theta_q \epsilon_{t-q+1}
+\hat{y}_{t+h|t} = E[y_{t+h} | y_1, y_2, ..., y_t]
 \]
+
+**Notation**:
+- \(\hat{y}_{t+h|t}\): Forecast made at time \(t\) for \(t+h\)
+- Based on information up to time \(t\)
+
+### Example: AR(1) Forecasting
+
+**Model**: \(y_t = \phi y_{t-1} + \varepsilon_t\)
+
+**1-step ahead** (\(h=1\)):
+\[
+\hat{y}_{t+1|t} = \phi y_t
+\]
+
+**2-step ahead** (\(h=2\)):
+\[
+\hat{y}_{t+2|t} = \phi \hat{y}_{t+1|t} = \phi^2 y_t
+\]
+
+**General h-step**:
+\[
+\hat{y}_{t+h|t} = \phi^h y_t
+\]
+
+**Key insight**: For \(|\phi| < 1\), forecasts converge to mean as \(h \to \infty\)
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Simulate AR(1) and forecast
+np.random.seed(42)
+phi = 0.8
+n = 100
+h_max = 20
+
+# Generate data
+y = np.zeros(n)
+for t in range(1, n):
+    y[t] = phi * y[t-1] + np.random.normal(0, 1)
+
+# Generate forecasts
+forecasts = np.zeros(h_max)
+forecasts[0] = phi * y[-1]
+for h in range(1, h_max):
+    forecasts[h] = phi * forecasts[h-1]
+
+# Plot
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.plot(range(n), y, label='Historical', linewidth=2)
+ax.plot(range(n, n+h_max), forecasts, 
+        label='Forecast', color='red', linewidth=2, linestyle='--')
+ax.axvline(x=n-1, color='gray', linestyle=':', alpha=0.5)
+ax.axhline(y=0, color='gray', linestyle=':', alpha=0.3)
+ax.set_xlabel('Time')
+ax.set_ylabel('Value')
+ax.set_title(f'AR(1) Forecasting (φ={phi})')
+ax.legend()
+ax.grid(alpha=0.3)
+plt.show()
+
+print("Forecast values converge to mean (0):")
+for h in [1, 5, 10, 20]:
+    print(f"  h={h:2d}: {forecasts[h-1]:.4f}")
+```
+
+## Forecast Intervals
+
+### Prediction Uncertainty
+
+**Forecast error**:
+\[
+e_{t+h|t} = y_{t+h} - \hat{y}_{t+h|t}
+\]
+
+**Forecast variance** (for AR(1)):
+\[
+\text{Var}(e_{t+h|t}) = \sigma^2 \frac{1 - \phi^{2h}}{1 - \phi^2}
+\]
+
+**Grows with horizon**: Uncertainty increases as we forecast further
+
+### Confidence Intervals
+
+**95% prediction interval**:
+
+\[
+\hat{y}_{t+h|t} \pm 1.96 \times \sqrt{\text{Var}(e_{t+h|t})}
+\]
+
+**Properties**:
+- Width increases with \(h\)
+- Based on assumption of normally distributed errors
+- Contains true value ~95% of the time
 
 ```python
 from statsmodels.tsa.arima.model import ARIMA
 import pandas as pd
-import numpy as np
 
-# Fit model
-model = ARIMA(ts, order=(1, 1, 1))
+# Fit AR(1) model
+model = ARIMA(y, order=(1,0,0))
 results = model.fit()
 
-# One-step forecast
-forecast_1step = results.forecast(steps=1)
-print(f"Next value forecast: {forecast_1step.iloc[0]:.2f}")
-```
+# Generate forecast with confidence intervals
+forecast = results.get_forecast(steps=h_max)
+forecast_df = forecast.summary_frame()
 
-### Multi-Step Forecasts
+# Plot with confidence intervals
+fig, ax = plt.subplots(figsize=(12, 6))
 
-**Predict h steps ahead**
+ax.plot(range(n), y, label='Historical', linewidth=2)
+ax.plot(range(n, n+h_max), forecast_df['mean'], 
+        label='Forecast', color='red', linewidth=2)
+ax.fill_between(range(n, n+h_max),
+                forecast_df['mean_ci_lower'],
+                forecast_df['mean_ci_upper'],
+                color='red', alpha=0.2, label='95% CI')
 
-```python
-# Forecast next 12 periods
-forecast = results.forecast(steps=12)
-print(forecast)
-
-# Plot
-import matplotlib.pyplot as plt
-
-plt.figure(figsize=(12, 6))
-plt.plot(ts, label='Historical Data')
-plt.plot(forecast, label='Forecast', color='red', marker='o')
-plt.legend()
-plt.title('ARIMA Forecast')
-plt.ylabel('Value')
-plt.grid(alpha=0.3)
-plt.tight_layout()
+ax.axvline(x=n-1, color='gray', linestyle=':', alpha=0.5)
+ax.set_xlabel('Time')
+ax.set_ylabel('Value')
+ax.set_title('AR(1) Forecast with 95% Confidence Intervals')
+ax.legend()
+ax.grid(alpha=0.3)
 plt.show()
+
+print("\nForecast with 95% Confidence Intervals:")
+print(forecast_df[['mean', 'mean_ci_lower', 'mean_ci_upper']].head(10))
 ```
 
-### Forecast Uncertainty
+## ARIMA/SARIMA Forecasting
 
-**Forecast error variance increases with horizon**:
+### General Procedure
 
-\[
-\text{Var}(\hat{y}_{t+h}) = \sigma^2 \left(1 + \psi_1^2 + \psi_2^2 + ... + \psi_{h-1}^2\right)
-\]
+**For ARIMA(p,d,q)**:
 
-Where \(\psi_i\) are MA representation coefficients.
-
-**Key insight**: Long-term forecasts less reliable
-
-## Confidence Intervals
-
-### Construction
-
-**95% Confidence Interval**:
-
-\[
-\hat{y}_{t+h} \pm 1.96 \times SE(\hat{y}_{t+h})
-\]
-
-Where \(SE\) is the standard error of forecast.
+1. **Generate forecasts** for differenced series
+2. **Invert differences** to get original scale
+3. **Compute prediction intervals** accounting for differencing
 
 ```python
-# Forecast with confidence intervals
-forecast_obj = results.get_forecast(steps=12)
-forecast_df = forecast_obj.summary_frame()
+from statsmodels.datasets import get_rdataset
 
-print(forecast_df[['mean', 'mean_se', 'mean_ci_lower', 'mean_ci_upper']])
-```
+# Load airline data
+data = get_rdataset('AirPassengers').data
+data['time'] = pd.date_range('1949-01', periods=len(data), freq='M')
+data.set_index('time', inplace=True)
+ts = data['value']
 
-### Visualization
+# Split into train/test
+train = ts[:'1958']
+test = ts['1959':'1960']
 
-```python
-plt.figure(figsize=(12, 6))
+print(f"Training: {len(train)} observations")
+print(f"Testing: {len(test)} observations")
 
-# Historical data
-plt.plot(ts, label='Historical', color='blue')
+# Fit SARIMA model
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+
+model = SARIMAX(
+    train,
+    order=(0, 1, 1),
+    seasonal_order=(0, 1, 1, 12),
+    enforce_stationarity=False,
+    enforce_invertibility=False
+)
+results = model.fit(disp=False)
+
+print("\nModel Summary:")
+print(results.summary())
 
 # Forecast
-plt.plot(forecast_df['mean'], label='Forecast', color='red')
+forecast_steps = len(test)
+forecast = results.get_forecast(steps=forecast_steps)
+forecast_df = forecast.summary_frame()
 
-# Confidence interval
-plt.fill_between(
-    forecast_df.index,
-    forecast_df['mean_ci_lower'],
-    forecast_df['mean_ci_upper'],
-    color='red',
-    alpha=0.2,
-    label='95% Confidence Interval'
-)
+# Plot
+fig, ax = plt.subplots(figsize=(14, 6))
 
-plt.legend()
-plt.title('ARIMA Forecast with Confidence Intervals')
-plt.ylabel('Value')
-plt.grid(alpha=0.3)
+ax.plot(train.index, train, label='Train', linewidth=2)
+ax.plot(test.index, test, label='Test (Actual)', linewidth=2, color='green')
+ax.plot(test.index, forecast_df['mean'], 
+        label='Forecast', linewidth=2, color='red', linestyle='--')
+ax.fill_between(test.index,
+                forecast_df['mean_ci_lower'],
+                forecast_df['mean_ci_upper'],
+                color='red', alpha=0.2, label='95% CI')
+
+ax.set_title('SARIMA Forecast: Airline Passengers')
+ax.set_xlabel('Year')
+ax.set_ylabel('Passengers (thousands)')
+ax.legend(loc='upper left')
+ax.grid(alpha=0.3)
 plt.tight_layout()
 plt.show()
-```
-
-### Prediction Intervals
-
-**Different confidence levels**:
-
-```python
-# 80%, 95%, 99% intervals
-for alpha in [0.20, 0.05, 0.01]:
-    forecast_obj = results.get_forecast(steps=12)
-    forecast_df = forecast_obj.summary_frame(alpha=alpha)
-    
-    confidence_level = int((1 - alpha) * 100)
-    print(f"\n{confidence_level}% Confidence Interval:")
-    print(forecast_df[['mean', 'mean_ci_lower', 'mean_ci_upper']].head())
 ```
 
 ## Forecast Evaluation
 
-### Train-Test Split
+### Error Metrics
 
-```python
-# Split data: 80% train, 20% test
-train_size = int(0.8 * len(ts))
-train = ts[:train_size]
-test = ts[train_size:]
-
-print(f"Train: {len(train)} observations")
-print(f"Test: {len(test)} observations")
-
-# Fit on train
-model = ARIMA(train, order=(1, 1, 1))
-results = model.fit()
-
-# Forecast test period
-forecast = results.forecast(steps=len(test))
-
-# Align indices
-forecast.index = test.index
-```
-
-### Forecast Errors
-
-```python
-# Calculate errors
-errors = test - forecast
-
-print(f"Mean error: {errors.mean():.4f}")
-print(f"Std of errors: {errors.std():.4f}")
-
-# Plot actual vs forecast
-plt.figure(figsize=(12, 6))
-plt.plot(test, label='Actual', marker='o')
-plt.plot(forecast, label='Forecast', marker='x')
-plt.legend()
-plt.title('Actual vs Forecast')
-plt.ylabel('Value')
-plt.grid(alpha=0.3)
-plt.tight_layout()
-plt.show()
-```
-
-### Performance Metrics
-
-#### Mean Absolute Error (MAE)
-
+**1. Mean Absolute Error (MAE)**:
 \[
-MAE = \frac{1}{n}\sum_{i=1}^n |y_i - \hat{y}_i|
+\text{MAE} = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|
+\]
+
+**2. Root Mean Squared Error (RMSE)**:
+\[
+\text{RMSE} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
+\]
+
+**3. Mean Absolute Percentage Error (MAPE)**:
+\[
+\text{MAPE} = \frac{100}{n} \sum_{i=1}^{n} \left|\frac{y_i - \hat{y}_i}{y_i}\right|
+\]
+
+**4. Symmetric MAPE (SMAPE)**:
+\[
+\text{SMAPE} = \frac{100}{n} \sum_{i=1}^{n} \frac{|y_i - \hat{y}_i|}{(|y_i| + |\hat{y}_i|)/2}
 \]
 
 ```python
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-mae = mean_absolute_error(test, forecast)
-print(f"MAE: {mae:.4f}")
+def calculate_metrics(actual, predicted):
+    """
+    Calculate forecast accuracy metrics
+    """
+    mae = mean_absolute_error(actual, predicted)
+    rmse = np.sqrt(mean_squared_error(actual, predicted))
+    mape = np.mean(np.abs((actual - predicted) / actual)) * 100
+    smape = np.mean(2 * np.abs(predicted - actual) / 
+                    (np.abs(actual) + np.abs(predicted))) * 100
+    
+    return {'MAE': mae, 'RMSE': rmse, 'MAPE': mape, 'SMAPE': smape}
+
+# Calculate metrics
+metrics = calculate_metrics(test.values, forecast_df['mean'].values)
+
+print("\n" + "="*50)
+print("Forecast Accuracy Metrics")
+print("="*50)
+for metric, value in metrics.items():
+    print(f"{metric:10s}: {value:8.2f}")
+
+# Mean Forecast Error (bias)
+mfe = np.mean(test.values - forecast_df['mean'].values)
+print(f"\nMean Forecast Error (Bias): {mfe:.2f}")
+if abs(mfe) < 5:
+    print("  ✓ Low bias - forecasts are unbiased")
+else:
+    print("  ✗ Significant bias detected")
 ```
-
-**Interpretation**: Average absolute forecast error in original units
-
-#### Root Mean Squared Error (RMSE)
-
-\[
-RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^n (y_i - \hat{y}_i)^2}
-\]
-
-```python
-from sklearn.metrics import mean_squared_error
-
-rmse = np.sqrt(mean_squared_error(test, forecast))
-print(f"RMSE: {rmse:.4f}")
-```
-
-**Interpretation**: Penalizes large errors more than MAE
-
-#### Mean Absolute Percentage Error (MAPE)
-
-\[
-MAPE = \frac{100}{n}\sum_{i=1}^n \left|\frac{y_i - \hat{y}_i}{y_i}\right|
-\]
-
-```python
-def mape(actual, forecast):
-    return np.mean(np.abs((actual - forecast) / actual)) * 100
-
-mape_value = mape(test, forecast)
-print(f"MAPE: {mape_value:.2f}%")
-```
-
-**Interpretation**: Percentage error (scale-independent)
-
-**Problem**: Undefined when actual = 0
-
-#### Symmetric MAPE (SMAPE)
-
-\[
-SMAPE = \frac{100}{n}\sum_{i=1}^n \frac{|y_i - \hat{y}_i|}{(|y_i| + |\hat{y}_i|)/2}
-\]
-
-```python
-def smape(actual, forecast):
-    denominator = (np.abs(actual) + np.abs(forecast)) / 2
-    return np.mean(np.abs(actual - forecast) / denominator) * 100
-
-smape_value = smape(test, forecast)
-print(f"SMAPE: {smape_value:.2f}%")
-```
-
-**Advantage**: Symmetric, bounded [0, 200]
-
-#### Mean Absolute Scaled Error (MASE)
-
-\[
-MASE = \frac{MAE}{\frac{1}{n-1}\sum_{i=2}^n |y_i - y_{i-1}|}
-\]
-
-```python
-def mase(actual, forecast, train):
-    mae = mean_absolute_error(actual, forecast)
-    naive_mae = np.mean(np.abs(np.diff(train)))
-    return mae / naive_mae
-
-mase_value = mase(test, forecast, train)
-print(f"MASE: {mase_value:.4f}")
-```
-
-**Interpretation**:
-- < 1: Better than naïve forecast
-- = 1: Same as naïve
-- > 1: Worse than naïve
 
 ### Coverage Probability
 
-**Proportion of actuals within confidence intervals**:
+**Proportion of actual values within confidence intervals**:
 
 ```python
-# Get forecast with intervals
-forecast_obj = results.get_forecast(steps=len(test))
-forecast_df = forecast_obj.summary_frame()
-forecast_df.index = test.index
+# Check if actual values fall within 95% CI
+within_ci = ((test.values >= forecast_df['mean_ci_lower'].values) & 
+             (test.values <= forecast_df['mean_ci_upper'].values))
 
-# Check coverage
-within_interval = (
-    (test >= forecast_df['mean_ci_lower']) & 
-    (test <= forecast_df['mean_ci_upper'])
-)
+coverage = within_ci.mean() * 100
 
-coverage = within_interval.mean()
-print(f"95% CI Coverage: {coverage:.1%}")
-print(f"Expected: 95%, Actual: {coverage:.1%}")
+print(f"\nCoverage Probability:")
+print(f"  {coverage:.1f}% of actual values within 95% CI")
+print(f"  Expected: 95%")
+
+if coverage >= 90:
+    print("  ✓ Good coverage")
+else:
+    print("  ✗ Poor coverage - intervals may be too narrow")
 ```
 
-**Ideal**: Coverage ≈ confidence level
-
-## Rolling Forecast
+## Rolling Window Validation
 
 ### Walk-Forward Validation
 
-**More realistic evaluation**:
+**Procedure**:
+1. Train on initial window
+2. Forecast next step
+3. Add actual value to training set
+4. Retrain and repeat
 
 ```python
-def rolling_forecast(train, test, order):
+def rolling_forecast(ts, train_size, horizon=1):
     """
-    Perform rolling forecast (walk-forward)
+    Perform rolling window forecast
     """
-    forecasts = []
-    history = list(train)
+    n = len(ts)
+    predictions = []
+    actuals = []
     
-    for actual in test:
-        # Fit model on current history
-        model = ARIMA(history, order=order)
-        results = model.fit()
+    for i in range(train_size, n - horizon + 1):
+        # Train data
+        train = ts[:i]
         
-        # Forecast one step
-        forecast = results.forecast(steps=1).iloc[0]
-        forecasts.append(forecast)
+        # Fit model
+        model = SARIMAX(
+            train,
+            order=(0, 1, 1),
+            seasonal_order=(0, 1, 1, 12)
+        )
+        results = model.fit(disp=False)
         
-        # Add actual to history
-        history.append(actual)
+        # Forecast
+        forecast = results.get_forecast(steps=horizon)
+        pred = forecast.predicted_mean.iloc[-1]
+        
+        predictions.append(pred)
+        actuals.append(ts.iloc[i + horizon - 1])
+        
+        if (i - train_size) % 12 == 0:
+            print(f"  Progress: {i - train_size + 1} forecasts")
     
-    return pd.Series(forecasts, index=test.index)
+    return np.array(actuals), np.array(predictions)
 
-# Perform rolling forecast
-rolling_fc = rolling_forecast(train, test, order=(1, 1, 1))
+print("\nPerforming rolling forecast validation...")
+train_size = 108  # 9 years
+actuals, predictions = rolling_forecast(ts, train_size, horizon=1)
 
-# Evaluate
-rolling_mae = mean_absolute_error(test, rolling_fc)
-print(f"Rolling Forecast MAE: {rolling_mae:.4f}")
+# Calculate metrics
+roll_metrics = calculate_metrics(actuals, predictions)
 
-# Compare to static forecast
-static_fc = results.forecast(steps=len(test))
-static_fc.index = test.index
-static_mae = mean_absolute_error(test, static_fc)
-print(f"Static Forecast MAE: {static_mae:.4f}")
+print("\n" + "="*50)
+print("Rolling Forecast Metrics (1-step ahead)")
+print("="*50)
+for metric, value in roll_metrics.items():
+    print(f"{metric:10s}: {value:8.2f}")
 
-# Plot comparison
-plt.figure(figsize=(12, 6))
-plt.plot(test, label='Actual', marker='o')
-plt.plot(static_fc, label='Static Forecast', marker='x')
-plt.plot(rolling_fc, label='Rolling Forecast', marker='s')
-plt.legend()
-plt.title('Static vs Rolling Forecast')
-plt.ylabel('Value')
-plt.grid(alpha=0.3)
-plt.tight_layout()
+# Plot
+fig, ax = plt.subplots(figsize=(14, 6))
+ax.plot(actuals, label='Actual', linewidth=2)
+ax.plot(predictions, label='Forecast', linewidth=2, alpha=0.7)
+ax.set_title('Rolling Forecast Validation')
+ax.set_xlabel('Forecast Step')
+ax.set_ylabel('Passengers')
+ax.legend()
+ax.grid(alpha=0.3)
 plt.show()
 ```
 
-**Rolling forecast** usually more accurate (model updated with new data)
+## Multi-Step Forecasting
 
-## Complete Example: Retail Sales Forecasting
+### Strategies
+
+**1. Direct Multi-Step**:
+- Build separate model for each horizon
+- Pros: Tailored to each horizon
+- Cons: Many models to maintain
+
+**2. Recursive (Iterative)**:
+- Use 1-step forecast as input for next step
+- Pros: Single model
+- Cons: Errors accumulate
+
+**3. DirRec (Hybrid)**:
+- Combines both approaches
 
 ```python
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-import warnings
-warnings.filterwarnings('ignore')
+# Compare 1-step vs multi-step accuracy
+horizons = [1, 3, 6, 12]
+results_by_horizon = []
 
-# Generate synthetic retail sales data
-np.random.seed(42)
-months = pd.date_range('2015-01', periods=120, freq='M')
-t = np.arange(120)
+for h in horizons:
+    model = SARIMAX(
+        train,
+        order=(0, 1, 1),
+        seasonal_order=(0, 1, 1, 12)
+    )
+    fitted = model.fit(disp=False)
+    
+    forecast = fitted.get_forecast(steps=h)
+    pred = forecast.predicted_mean.iloc[-1]
+    actual = test.iloc[h-1]
+    error = abs(actual - pred)
+    
+    results_by_horizon.append({
+        'Horizon': h,
+        'Forecast': pred,
+        'Actual': actual,
+        'Error': error,
+        'MAPE': 100 * error / actual
+    })
 
-# Components
-trend = 100 + 2 * t  # Growing trend
-seasonal = 20 * np.sin(2 * np.pi * t / 12)  # Yearly seasonality
-noise = np.random.normal(0, 5, 120)
-sales = trend + seasonal + noise
+df_horizons = pd.DataFrame(results_by_horizon)
+print("\nAccuracy by Forecast Horizon:")
+print(df_horizons.to_string(index=False))
 
-ts = pd.Series(sales, index=months, name='Sales')
-
-print("=" * 60)
-print("RETAIL SALES FORECASTING CASE STUDY")
-print("=" * 60)
-
-# Step 1: Visualize
-print("\n1. Data Visualization")
-plt.figure(figsize=(12, 6))
-plt.plot(ts)
-plt.title('Monthly Retail Sales (2015-2024)', fontsize=14, fontweight='bold')
-plt.ylabel('Sales ($1000s)')
-plt.grid(alpha=0.3)
-plt.tight_layout()
+# Plot
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(df_horizons['Horizon'], df_horizons['MAPE'], 
+        marker='o', linewidth=2, markersize=8)
+ax.set_xlabel('Forecast Horizon (months)')
+ax.set_ylabel('MAPE (%)')
+ax.set_title('Forecast Accuracy vs Horizon')
+ax.grid(alpha=0.3)
 plt.show()
+```
 
-# Step 2: Train-test split
-print("\n2. Train-Test Split")
-train_size = 96  # 8 years train, 2 years test
-train = ts[:train_size]
-test = ts[train_size:]
-print(f"   Training: {train.index[0]} to {train.index[-1]} ({len(train)} months)")
-print(f"   Testing:  {test.index[0]} to {test.index[-1]} ({len(test)} months)")
+## Forecast Updating
 
-# Step 3: Model identification
-print("\n3. Model Identification")
+### When to Update
 
-# Check stationarity
-from statsmodels.tsa.stattools import adfuller
-adf_result = adfuller(train)
-print(f"   ADF test p-value: {adf_result[1]:.4f}")
-if adf_result[1] > 0.05:
-    print("   => Series is non-stationary, will difference")
+**Triggers for model update**:
+1. **Regular schedule**: Weekly, monthly, quarterly
+2. **Performance degradation**: MAPE exceeds threshold
+3. **Structural breaks**: Major events, policy changes
+4. **New data availability**: Additional observations
 
-# Difference
-train_diff = train.diff().dropna()
-adf_result = adfuller(train_diff)
-print(f"   After differencing, p-value: {adf_result[1]:.4f}")
+### Online Updating
 
-if adf_result[1] <= 0.05:
-    print("   => Series is now stationary")
+```python
+def update_forecast(model_results, new_data, forecast_horizon):
+    """
+    Update forecast with new observations
+    """
+    # Extend the model with new data
+    updated = model_results.append(new_data, refit=True)
+    
+    # Generate new forecast
+    forecast = updated.get_forecast(steps=forecast_horizon)
+    
+    return updated, forecast
 
-# ACF/PACF
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-plot_acf(train_diff, lags=20, ax=axes[0])
-plot_pacf(train_diff, lags=20, ax=axes[1])
-plt.suptitle('ACF and PACF of Differenced Series', fontweight='bold')
-plt.tight_layout()
-plt.show()
+# Example: Update monthly
+print("\nForecast Update Example:")
+print("-" * 50)
 
-# Step 4: Model selection
-print("\n4. Model Selection (Grid Search)")
+# Initial model
+initial_model = SARIMAX(train, order=(0,1,1), seasonal_order=(0,1,1,12))
+initial_results = initial_model.fit(disp=False)
 
-models_to_test = [
-    (0, 1, 1),
-    (1, 1, 0),
-    (1, 1, 1),
-    (2, 1, 1),
-    (1, 1, 2),
-    (2, 1, 2)
-]
+print(f"Initial training end: {train.index[-1]}")
 
-results_list = []
-for order in models_to_test:
-    try:
-        model = ARIMA(train, order=order)
-        fitted = model.fit()
-        results_list.append({
-            'Order': order,
-            'AIC': fitted.aic,
-            'BIC': fitted.bic,
-            'Log-Likelihood': fitted.llf
-        })
-    except:
-        continue
+# Add one month and update
+new_observation = test.iloc[:1]
+print(f"New observation: {new_observation.index[0]} = {new_observation.values[0]:.0f}")
 
-results_df = pd.DataFrame(results_list).sort_values('AIC')
-print("\n   Model Comparison (sorted by AIC):")
-print(results_df.to_string(index=False))
-
-best_order = results_df.iloc[0]['Order']
-print(f"\n   ✓ Best model: ARIMA{best_order}")
-
-# Step 5: Fit best model
-print("\n5. Fitting Best Model")
-model = ARIMA(train, order=best_order)
-results = model.fit()
-print(results.summary())
-
-# Step 6: Diagnostics
-print("\n6. Model Diagnostics")
-results.plot_diagnostics(figsize=(12, 8))
-plt.suptitle(f'Diagnostic Plots for ARIMA{best_order}', fontweight='bold')
-plt.tight_layout()
-plt.show()
-
-# Ljung-Box test
-from statsmodels.stats.diagnostic import acorr_ljungbox
-lb_test = acorr_ljungbox(results.resid, lags=10)
-print(f"   Ljung-Box test (p-value): {lb_test['lb_pvalue'].iloc[-1]:.4f}")
-if lb_test['lb_pvalue'].iloc[-1] > 0.05:
-    print("   ✓ Residuals are white noise")
-
-# Step 7: Forecast
-print("\n7. Forecasting")
-forecast_obj = results.get_forecast(steps=len(test))
-forecast_df = forecast_obj.summary_frame()
-forecast_df.index = test.index
-
-# Plot forecast
-plt.figure(figsize=(14, 7))
-
-# Historical data
-plt.plot(train, label='Training Data', color='blue', linewidth=2)
-plt.plot(test, label='Actual Test Data', color='green', linewidth=2, marker='o')
-
-# Forecast
-plt.plot(forecast_df['mean'], label='Forecast', color='red', linewidth=2, marker='s')
-
-# Confidence interval
-plt.fill_between(
-    forecast_df.index,
-    forecast_df['mean_ci_lower'],
-    forecast_df['mean_ci_upper'],
-    color='red',
-    alpha=0.2,
-    label='95% Confidence Interval'
+updated_results, new_forecast = update_forecast(
+    initial_results, 
+    new_observation, 
+    forecast_horizon=12
 )
 
-plt.axvline(train.index[-1], color='black', linestyle='--', alpha=0.5)
-plt.text(train.index[-1], plt.ylim()[1]*0.95, ' Train/Test Split', 
-         rotation=90, verticalalignment='top')
-
-plt.title(f'ARIMA{best_order} Forecast vs Actual', fontsize=14, fontweight='bold')
-plt.ylabel('Sales ($1000s)')
-plt.legend(loc='upper left')
-plt.grid(alpha=0.3)
-plt.tight_layout()
-plt.show()
-
-# Step 8: Evaluate
-print("\n8. Forecast Evaluation")
-forecast_values = forecast_df['mean']
-
-mae = mean_absolute_error(test, forecast_values)
-rmse = np.sqrt(mean_squared_error(test, forecast_values))
-mape_val = np.mean(np.abs((test - forecast_values) / test)) * 100
-
-print(f"   MAE:  ${mae:.2f}k")
-print(f"   RMSE: ${rmse:.2f}k")
-print(f"   MAPE: {mape_val:.2f}%")
-
-# Coverage
-within_ci = (
-    (test >= forecast_df['mean_ci_lower']) & 
-    (test <= forecast_df['mean_ci_upper'])
-)
-coverage = within_ci.mean()
-print(f"   95% CI Coverage: {coverage:.1%}")
-
-# Error distribution
-errors = test - forecast_values
-plt.figure(figsize=(12, 4))
-
-plt.subplot(1, 2, 1)
-plt.plot(errors, marker='o')
-plt.axhline(0, color='r', linestyle='--')
-plt.title('Forecast Errors Over Time')
-plt.ylabel('Error ($1000s)')
-plt.grid(alpha=0.3)
-
-plt.subplot(1, 2, 2)
-plt.hist(errors, bins=15, edgecolor='black')
-plt.axvline(0, color='r', linestyle='--', linewidth=2)
-plt.title('Distribution of Forecast Errors')
-plt.xlabel('Error ($1000s)')
-plt.ylabel('Frequency')
-plt.grid(alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-
-print("\n" + "=" * 60)
-print("FORECAST SUMMARY")
-print("=" * 60)
-print(f"Model: ARIMA{best_order}")
-print(f"Forecast Horizon: {len(test)} months")
-print(f"Mean Absolute Error: ${mae:.2f}k")
-print(f"Accuracy (100% - MAPE): {100 - mape_val:.2f}%")
-print("\nConclusion: Model provides reliable forecasts for retail")
-print("sales planning with ~{:.0f}% accuracy.".format(100 - mape_val))
-print("=" * 60)
+print(f"Updated model training end: {train.index[-1] + pd.DateOffset(months=1)}")
+print(f"Next 12-month forecast generated")
 ```
 
-## Best Practices
+## Practical Guidelines
 
-### Forecast Horizon
+### Forecast Horizon Selection
 
-✅ **Short-term (1-3 steps)**: Usually reliable
-✅ **Medium-term (4-12 steps)**: Use with caution
-❌ **Long-term (>12 steps)**: High uncertainty, often revert to mean
+**Rule of thumb**: Reliable forecasts typically extend to:
+- **Short-term**: 1-3 periods ahead (high accuracy)
+- **Medium-term**: 4-12 periods ahead (moderate accuracy)
+- **Long-term**: >12 periods ahead (low accuracy, high uncertainty)
 
-### Model Updating
+### Best Practices
 
-**Retrain regularly**:
-- Weekly for daily data
-- Monthly for weekly data
-- Quarterly for monthly data
+✅ **DO**:
+1. Use multiple models and ensemble
+2. Always include confidence intervals
+3. Validate out-of-sample
+4. Update models regularly
+5. Monitor forecast errors
+6. Document assumptions
+7. Consider business constraints
+8. Communicate uncertainty
 
-### Ensemble Forecasting
-
-**Combine multiple models**:
-
-```python
-# Fit multiple models
-model1 = ARIMA(train, order=(1, 1, 1)).fit()
-model2 = ARIMA(train, order=(2, 1, 2)).fit()
-
-# Forecast
-f1 = model1.forecast(steps=len(test))
-f2 = model2.forecast(steps=len(test))
-
-# Simple average
-ensemble = (f1 + f2) / 2
-ensemble.index = test.index
-
-# Evaluate
-mae_ensemble = mean_absolute_error(test, ensemble)
-print(f"Ensemble MAE: {mae_ensemble:.4f}")
-```
+❌ **DON'T**:
+1. Over-rely on point forecasts
+2. Extrapolate too far ahead
+3. Ignore structural breaks
+4. Use only in-sample fit
+5. Forget to check residuals
+6. Assume stationarity without testing
+7. Ignore domain knowledge
+8. Hide forecast uncertainty
 
 ## Summary
 
-**Forecasting Checklist**:
+**Key Concepts**:
 
-1. ✅ **Split data** into train/test
-2. ✅ **Fit model** on training data only
-3. ✅ **Generate forecasts** for test period
-4. ✅ **Calculate metrics** (MAE, RMSE, MAPE)
-5. ✅ **Check coverage** of confidence intervals
-6. ✅ **Visualize** actual vs forecast
-7. ✅ **Consider rolling forecast** for realistic evaluation
-8. ✅ **Document assumptions** and limitations
+✅ **Point forecasts** are conditional expectations
+✅ **Prediction intervals** quantify uncertainty
+✅ **Uncertainty grows** with forecast horizon
+✅ **Multiple metrics** assess different aspects
+✅ **Rolling validation** mimics real-world usage
+✅ **Regular updates** maintain accuracy
+✅ **Communication** of uncertainty is crucial
 
-**Key Takeaways**:
+**Typical Workflow**:
+1. Fit model on training data
+2. Generate forecasts with intervals
+3. Evaluate on test data
+4. Calculate accuracy metrics
+5. Check coverage probability
+6. Perform rolling validation
+7. Update model periodically
+8. Monitor ongoing performance
 
-- **Uncertainty increases** with forecast horizon
-- **Confidence intervals** are essential
-- **Multiple metrics** provide complete picture
-- **Out-of-sample testing** prevents overfitting
-- **Regular retraining** maintains accuracy
-- **Business context** matters more than statistical perfection
+**Forecast Quality Indicators**:
+- MAE/RMSE within acceptable range
+- Low bias (MFE ≈ 0)
+- Coverage probability ≈ 95%
+- Residuals are white noise
+- Consistent performance over time
 
-## Next Steps
+## Next Section
 
-This completes Chapter 8 on Time Series Analysis! You now understand:
+Continue to [Advanced Methods](07-advanced-methods.md) to explore Prophet, exponential smoothing, and machine learning approaches for time series forecasting.
+
+---
+
+**Chapter 8 Complete!** You now understand:
 - Stationarity and transformations
-- ACF/PACF interpretation
-- ARIMA modeling
+- ACF/PACF for model identification
+- ARIMA and SARIMA models
+- Model selection and diagnostics
 - Forecasting with confidence intervals
-- Evaluation metrics
+- Forecast evaluation and validation
 
-**Continue to**: [Chapter 9: Text Analytics](../09-text-analytics/index.md) for natural language processing and text mining.
+**Next Chapter**: [Chapter 9: Text Analytics](../09-text-analytics/index.md)
