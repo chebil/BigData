@@ -104,24 +104,83 @@ parts:
     chapters:
       - file: labs/README
         title: "Labs Overview"
+        sections:
+          - file: labs/LAB_EXPANSION_COMPLETE
+            title: "Lab Expansion Summary"
+          - file: labs/NOTEBOOKS_COMPLETE
+            title: "Interactive Notebooks Guide"
+
       - file: labs/02-statistics-lab/README
         title: "Lab 2: Statistics & Hypothesis Testing"
+        sections:
+          - file: labs/02-statistics-lab/lab_exercises
+            title: "Exercises"
+          - file: labs/02-statistics-lab/lab02_statistics_interactive
+            title: "Interactive Notebook"
+
       - file: labs/03-clustering-lab/README
         title: "Lab 3: Clustering - Customer Segmentation"
+        sections:
+          - file: labs/03-clustering-lab/dataset_info
+            title: "Dataset Information"
+          - file: labs/03-clustering-lab/lab03_clustering_interactive
+            title: "Interactive Notebook"
+
       - file: labs/04-classification-lab/README
         title: "Lab 4: Classification - Fraud Detection"
+        sections:
+          - file: labs/04-classification-lab/complete_walkthrough
+            title: "Complete Walkthrough"
+          - file: labs/04-classification-lab/lab04_classification_interactive
+            title: "Interactive Notebook"
+
       - file: labs/05-regression-lab/README
         title: "Lab 5: Regression - House Price Prediction"
+        sections:
+          - file: labs/05-regression-lab/complete_solution
+            title: "Complete Solution Guide"
+          - file: labs/05-regression-lab/lab05_regression_interactive
+            title: "Interactive Notebook"
+
       - file: labs/06-association-rules-lab/README
         title: "Lab 6: Association Rules - Market Basket"
+        sections:
+          - file: labs/06-association-rules-lab/market_basket_complete
+            title: "Market Basket Analysis Guide"
+          - file: labs/06-association-rules-lab/lab06_association_rules_interactive
+            title: "Interactive Notebook"
+
       - file: labs/07-model-selection-lab/README
         title: "Lab 7: Model Selection & Tuning"
+        sections:
+          - file: labs/07-model-selection-lab/hyperparameter_tuning_guide
+            title: "Hyperparameter Tuning Guide"
+          - file: labs/07-model-selection-lab/lab07_model_selection_interactive
+            title: "Interactive Notebook"
+
       - file: labs/08-time-series-lab/lab_exercises
         title: "Lab 8: Time Series Forecasting"
+        sections:
+          - file: labs/08-time-series-lab/forecasting_complete
+            title: "Forecasting Complete Guide"
+          - file: labs/08-time-series-lab/lab08_time_series_interactive
+            title: "Interactive Notebook"
+
       - file: labs/09-nlp-lab/lab_exercises
         title: "Lab 9: Text Analytics - Sentiment Analysis"
+        sections:
+          - file: labs/09-nlp-lab/sentiment_analysis_complete
+            title: "Sentiment Analysis Complete Guide"
+          - file: labs/09-nlp-lab/lab09_nlp_interactive
+            title: "Interactive Notebook"
+
       - file: labs/CAPSTONE-PROJECT/README
-        title: "Capstone Project"
+        title: "Capstone Project: E-Commerce Analytics"
+        sections:
+          - file: labs/CAPSTONE-PROJECT/project_guide
+            title: "Project Guide"
+          - file: labs/CAPSTONE-PROJECT/capstone_project_template
+            title: "Project Template (Notebook)"
 
   - caption: Resources
     chapters:
