@@ -2,523 +2,543 @@
 
 ## Introduction
 
-ARIMA (AutoRegressive Integrated Moving Average) combines three components to model time series:
-- **AR(p)**: Autoregressive - uses p past values
-- **I(d)**: Integrated - applies d differences
-- **MA(q)**: Moving Average - uses q past errors
+ARIMA (Autoregressive Integrated Moving Average) is a powerful and flexible class of models for time series forecasting. ARIMA combines:
+- **AR (Autoregressive)**: Uses past values
+- **I (Integrated)**: Applies differencing for stationarity  
+- **MA (Moving Average)**: Uses past forecast errors
 
-**ARIMA(p,d,q)** is the workhorse of time series forecasting.
+**Notation**: ARIMA(p, d, q)
+- **p**: Order of autoregressive component
+- **d**: Degree of differencing
+- **q**: Order of moving average component
 
 ## Autoregressive (AR) Models
 
 ### AR(1) Model
 
-Simplest case: current value depends on previous value
+**First-order autoregressive**:
 
 \[
-y_t = \phi_1 y_{t-1} + \epsilon_t
+y_t = c + \phi_1 y_{t-1} + \varepsilon_t
 \]
 
 Where:
-- \(y_t\): Value at time t
+- \(c\): Constant (intercept)
 - \(\phi_1\): AR coefficient
-- \(\epsilon_t\): White noise error \(\sim N(0, \sigma^2)\)
+- \(\varepsilon_t \sim N(0, \sigma^2)\): White noise error
 
-**Interpretation**: Each value is a fraction of the previous value plus random shock
+**Mean**: \(\mu = \frac{c}{1 - \phi_1}\)
 
-### General AR(p) Model
+**Alternative form** (zero-mean):
 
 \[
-y_t = c + \phi_1 y_{t-1} + \phi_2 y_{t-2} + ... + \phi_p y_{t-p} + \epsilon_t
+y_t - \mu = \phi_1(y_{t-1} - \mu) + \varepsilon_t
 \]
 
-Where:
-- \(c\): Constant term (related to mean)
-- \(\phi_i\): AR coefficients for lag i
-- \(p\): Order (number of lags)
+### Stationarity Condition
 
-### AR Model Characteristics
+**For AR(1) to be stationary**: \(|\phi_1| < 1\)
 
-**Stationarity Condition**: 
-- Roots of characteristic equation must lie outside unit circle
-- For AR(1): \(|\phi_1| < 1\)
-
-**Mean**:
-\[
-E[y_t] = \frac{c}{1 - \phi_1 - \phi_2 - ... - \phi_p}
-\]
-
-**ACF**: Decays exponentially or with damped oscillations
-
-**PACF**: Cuts off after lag p
-
-### Simulation
+- \(\phi_1 > 0\): Positive autocorrelation (smooth series)
+- \(\phi_1 < 0\): Negative autocorrelation (oscillating series)
+- \(\phi_1 \approx 1\): Near random walk (non-stationary)
 
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
 
-def simulate_ar(phi, n=200, sigma=1):
-    """
-    Simulate AR process
-    phi: list of AR coefficients
-    """
-    p = len(phi)
+# Simulate AR(1) with different phi values
+np.random.seed(42)
+n = 200
+
+fig, axes = plt.subplots(3, 1, figsize=(12, 10))
+phi_values = [0.9, 0.3, -0.6]
+
+for i, phi in enumerate(phi_values):
     y = np.zeros(n)
-    epsilon = np.random.normal(0, sigma, n)
+    y[0] = np.random.normal(0, 1)
     
-    for t in range(p, n):
-        y[t] = sum(phi[i] * y[t-i-1] for i in range(p)) + epsilon[t]
+    for t in range(1, n):
+        y[t] = phi * y[t-1] + np.random.normal(0, 1)
     
-    return y
-
-# AR(1) with phi = 0.7
-ar1 = simulate_ar([0.7], n=200)
-
-# AR(2) with phi = [0.5, 0.3]
-ar2 = simulate_ar([0.5, 0.3], n=200)
-
-fig, axes = plt.subplots(2, 1, figsize=(12, 8))
-axes[0].plot(ar1)
-axes[0].set_title('AR(1): $y_t = 0.7y_{t-1} + \epsilon_t$')
-axes[0].grid(alpha=0.3)
-
-axes[1].plot(ar2)
-axes[1].set_title('AR(2): $y_t = 0.5y_{t-1} + 0.3y_{t-2} + \epsilon_t$')
-axes[1].set_xlabel('Time')
-axes[1].grid(alpha=0.3)
+    axes[i].plot(y)
+    axes[i].set_title(f'AR(1) with φ₁ = {phi}')
+    axes[i].axhline(y=0, color='r', linestyle='--', alpha=0.3)
+    axes[i].grid(alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 ```
 
-### Identifying AR Order
+### General AR(p) Model
 
-**Use PACF (Partial Autocorrelation Function)**:
+**Autoregressive of order p**:
+
+\[
+y_t = c + \phi_1 y_{t-1} + \phi_2 y_{t-2} + ... + \phi_p y_{t-p} + \varepsilon_t
+\]
+
+Or using **backshift operator** \(B\) (where \(By_t = y_{t-1}\)):
+
+\[
+\Phi(B) y_t = c + \varepsilon_t
+\]
+
+Where \(\Phi(B) = 1 - \phi_1 B - \phi_2 B^2 - ... - \phi_p B^p\)
+
+**Stationarity condition**: All roots of \(\Phi(B) = 0\) must lie outside unit circle
+
+### AR(2) Example
 
 ```python
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.arima.model import ARIMA
+import pandas as pd
 
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+# Simulate AR(2): y_t = 0.6*y_{t-1} - 0.3*y_{t-2} + e_t
+np.random.seed(42)
+n = 500
+y_ar2 = np.zeros(n)
 
-plot_acf(ar1, lags=20, ax=axes[0,0], title='ACF of AR(1)')
-plot_pacf(ar1, lags=20, ax=axes[0,1], title='PACF of AR(1)')
-plot_acf(ar2, lags=20, ax=axes[1,0], title='ACF of AR(2)')
-plot_pacf(ar2, lags=20, ax=axes[1,1], title='PACF of AR(2)')
+for t in range(2, n):
+    y_ar2[t] = 0.6 * y_ar2[t-1] - 0.3 * y_ar2[t-2] + np.random.normal(0, 1)
 
-plt.tight_layout()
-plt.show()
+# Fit AR(2) model
+model_ar2 = ARIMA(y_ar2, order=(2, 0, 0))
+results_ar2 = model_ar2.fit()
+
+print("\nAR(2) Model Results:")
+print(results_ar2.summary())
+print(f"\nTrue parameters: φ₁=0.6, φ₂=-0.3")
+print(f"Estimated parameters: φ₁={results_ar2.params['ar.L1']:.4f}, φ₂={results_ar2.params['ar.L2']:.4f}")
 ```
-
-**Pattern**: 
-- **ACF**: Gradual decay
-- **PACF**: Cuts off sharply after lag p
-  - AR(1): Spike at lag 1 only
-  - AR(2): Spikes at lags 1 and 2 only
 
 ## Moving Average (MA) Models
 
 ### MA(1) Model
 
+**First-order moving average**:
+
 \[
-y_t = \mu + \epsilon_t + \theta_1 \epsilon_{t-1}
+y_t = \mu + \varepsilon_t + \theta_1 \varepsilon_{t-1}
 \]
 
 Where:
-- \(\mu\): Mean
-- \(\epsilon_t\): Current error
+- \(\mu\): Mean of the process
 - \(\theta_1\): MA coefficient
-- \(\epsilon_{t-1}\): Previous error
+- \(\varepsilon_t \sim N(0, \sigma^2)\): White noise
 
-**Interpretation**: Current value is weighted sum of current and past shocks
+**Key insight**: Current value depends on current and past **errors**, not past values
+
+### Invertibility Condition
+
+**For MA(1) to be invertible**: \(|\theta_1| < 1\)
+
+- Invertibility ensures unique AR representation
+- Analogous to stationarity for AR models
+
+```python
+# Simulate MA(1) with different theta values
+from statsmodels.tsa.arima_process import arma_generate_sample
+
+np.random.seed(42)
+n = 200
+
+fig, axes = plt.subplots(3, 1, figsize=(12, 10))
+theta_values = [0.8, 0.3, -0.6]
+
+for i, theta in enumerate(theta_values):
+    ar_params = np.array([1])  # No AR
+    ma_params = np.array([1, theta])  # MA(1)
+    
+    y = arma_generate_sample(ar_params, ma_params, nsample=n, scale=1)
+    
+    axes[i].plot(y)
+    axes[i].set_title(f'MA(1) with θ₁ = {theta}')
+    axes[i].axhline(y=0, color='r', linestyle='--', alpha=0.3)
+    axes[i].grid(alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
 
 ### General MA(q) Model
 
+**Moving average of order q**:
+
 \[
-y_t = \mu + \epsilon_t + \theta_1 \epsilon_{t-1} + \theta_2 \epsilon_{t-2} + ... + \theta_q \epsilon_{t-q}
+y_t = \mu + \varepsilon_t + \theta_1 \varepsilon_{t-1} + \theta_2 \varepsilon_{t-2} + ... + \theta_q \varepsilon_{t-q}
 \]
 
-Where:
-- \(q\): Order (number of lagged error terms)
-- \(\theta_i\): MA coefficients
+Using backshift operator:
 
-### MA Model Characteristics
+\[
+y_t = \mu + \Theta(B) \varepsilon_t
+\]
 
-**Always Stationary**: Finite weighted sum of white noise
+Where \(\Theta(B) = 1 + \theta_1 B + \theta_2 B^2 + ... + \theta_q B^q\)
 
-**Invertibility Condition**: 
-- Roots of characteristic equation outside unit circle
-- For MA(1): \(|\theta_1| < 1\)
+**Invertibility condition**: All roots of \(\Theta(B) = 0\) must lie outside unit circle
 
-**ACF**: Cuts off after lag q
-
-**PACF**: Decays exponentially
-
-### Simulation
+### MA(2) Example
 
 ```python
-def simulate_ma(theta, n=200, sigma=1, mu=0):
-    """
-    Simulate MA process
-    theta: list of MA coefficients
-    """
-    q = len(theta)
-    epsilon = np.random.normal(0, sigma, n)
-    y = np.zeros(n)
-    
-    for t in range(n):
-        y[t] = mu + epsilon[t]
-        for i in range(min(q, t)):
-            y[t] += theta[i] * epsilon[t-i-1]
-    
-    return y
+# Simulate MA(2): y_t = e_t + 0.5*e_{t-1} + 0.3*e_{t-2}
+np.random.seed(42)
+ar_params = np.array([1])
+ma_params = np.array([1, 0.5, 0.3])
 
-# MA(1) with theta = 0.7
-ma1 = simulate_ma([0.7], n=200)
+y_ma2 = arma_generate_sample(ar_params, ma_params, nsample=500, scale=1)
 
-# MA(2) with theta = [0.5, 0.3]
-ma2 = simulate_ma([0.5, 0.3], n=200)
+# Fit MA(2) model
+model_ma2 = ARIMA(y_ma2, order=(0, 0, 2))
+results_ma2 = model_ma2.fit()
 
-fig, axes = plt.subplots(2, 1, figsize=(12, 8))
-axes[0].plot(ma1)
-axes[0].set_title('MA(1): $y_t = \epsilon_t + 0.7\epsilon_{t-1}$')
-axes[0].grid(alpha=0.3)
-
-axes[1].plot(ma2)
-axes[1].set_title('MA(2): $y_t = \epsilon_t + 0.5\epsilon_{t-1} + 0.3\epsilon_{t-2}$')
-axes[1].set_xlabel('Time')
-axes[1].grid(alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+print("\nMA(2) Model Results:")
+print(results_ma2.summary())
+print(f"\nTrue parameters: θ₁=0.5, θ₂=0.3")
+print(f"Estimated parameters: θ₁={results_ma2.params['ma.L1']:.4f}, θ₂={results_ma2.params['ma.L2']:.4f}")
 ```
-
-### Identifying MA Order
-
-**Use ACF**:
-
-```python
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-
-plot_acf(ma1, lags=20, ax=axes[0,0], title='ACF of MA(1)')
-plot_pacf(ma1, lags=20, ax=axes[0,1], title='PACF of MA(1)')
-plot_acf(ma2, lags=20, ax=axes[1,0], title='ACF of MA(2)')
-plot_pacf(ma2, lags=20, ax=axes[1,1], title='PACF of MA(2)')
-
-plt.tight_layout()
-plt.show()
-```
-
-**Pattern**:
-- **ACF**: Cuts off sharply after lag q
-  - MA(1): Spike at lag 1 only
-  - MA(2): Spikes at lags 1 and 2 only
-- **PACF**: Gradual decay
 
 ## ARMA Models
 
-### ARMA(p,q)
+### ARMA(p,q) Definition
 
-Combines AR and MA components:
+**Combines AR and MA components**:
 
 \[
-y_t = c + \phi_1 y_{t-1} + ... + \phi_p y_{t-p} + \epsilon_t + \theta_1 \epsilon_{t-1} + ... + \theta_q \epsilon_{t-q}
+y_t = c + \phi_1 y_{t-1} + ... + \phi_p y_{t-p} + \varepsilon_t + \theta_1 \varepsilon_{t-1} + ... + \theta_q \varepsilon_{t-q}
 \]
 
 **Compact notation**:
+
 \[
-\phi(B) y_t = \theta(B) \epsilon_t
+\Phi(B) y_t = c + \Theta(B) \varepsilon_t
 \]
 
-Where B is the backshift operator: \(B y_t = y_{t-1}\)
+### Why Use ARMA?
 
-### ARMA Characteristics
+**Parsimony**: ARMA(1,1) can represent patterns requiring high-order pure AR or MA
 
-**ACF**: Decays (doesn't cut off sharply)
+**Example**: 
+- AR(∞) might be needed for certain patterns
+- ARMA(1,1) achieves same with just 2 parameters
 
-**PACF**: Decays (doesn't cut off sharply)
-
-**Both decay** → suggests ARMA model
-
-### Simulation
+### ARMA(1,1) Example
 
 ```python
-from statsmodels.tsa.arima_process import ArmaProcess
+# Simulate ARMA(1,1): y_t = 0.7*y_{t-1} + e_t + 0.4*e_{t-1}
+np.random.seed(42)
+ar_params = np.array([1, -0.7])  # Note: statsmodels uses negative convention
+ma_params = np.array([1, 0.4])
 
-# ARMA(1,1): phi=0.7, theta=0.5
-ar_params = np.array([0.7])
-ma_params = np.array([0.5])
+y_arma = arma_generate_sample(ar_params, ma_params, nsample=500, scale=1)
 
-arma11_process = ArmaProcess.from_coeffs(ar_params, ma_params)
-arma11 = arma11_process.generate_sample(nsample=200)
+# Fit ARMA(1,1) model
+model_arma = ARIMA(y_arma, order=(1, 0, 1))
+results_arma = model_arma.fit()
 
-plt.figure(figsize=(12, 4))
-plt.plot(arma11)
-plt.title('ARMA(1,1): $y_t = 0.7y_{t-1} + \epsilon_t + 0.5\epsilon_{t-1}$')
+print("\nARMA(1,1) Model Results:")
+print(results_arma.summary())
+print(f"\nTrue: φ₁=0.7, θ₁=0.4")
+print(f"Estimated: φ₁={results_arma.params['ar.L1']:.4f}, θ₁={results_arma.params['ma.L1']:.4f}")
+```
+
+## ARIMA Models
+
+### Adding Integration (I)
+
+**Problem**: Many real series are non-stationary
+
+**Solution**: Difference the series \(d\) times
+
+**ARIMA(p,d,q)**: Apply ARMA(p,q) to differenced series
+
+### First-Order Differencing
+
+\[
+\nabla y_t = y_t - y_{t-1}
+\]
+
+Using backshift: \(\nabla y_t = (1-B)y_t\)
+
+### Second-Order Differencing
+
+\[
+\nabla^2 y_t = \nabla(\nabla y_t) = (y_t - y_{t-1}) - (y_{t-1} - y_{t-2})
+\]
+
+Using backshift: \(\nabla^2 y_t = (1-B)^2 y_t\)
+
+### General ARIMA(p,d,q) Model
+
+**Step 1**: Difference \(d\) times to get \(w_t = \nabla^d y_t\)
+
+**Step 2**: Apply ARMA(p,q) to \(w_t\):
+
+\[
+\Phi(B) w_t = c + \Theta(B) \varepsilon_t
+\]
+
+**Combined form**:
+
+\[
+\Phi(B) (1-B)^d y_t = c + \Theta(B) \varepsilon_t
+\]
+
+### Common ARIMA Models
+
+| Model | Description | Use Case |
+|-------|-------------|----------|
+| **ARIMA(0,1,0)** | Random walk | Stock prices |
+| **ARIMA(0,1,1)** | Exponential smoothing | Demand forecasting |
+| **ARIMA(1,1,0)** | Differenced AR(1) | Economic indicators |
+| **ARIMA(0,2,2)** | Linear trend | Growth series |
+| **ARIMA(1,1,1)** | General model | Many applications |
+
+### ARIMA(0,1,1) - Exponential Smoothing
+
+\[
+\nabla y_t = \varepsilon_t + \theta_1 \varepsilon_{t-1}
+\]
+
+Equivalent to:
+
+\[
+y_t = y_{t-1} + \varepsilon_t + \theta_1 \varepsilon_{t-1}
+\]
+
+**Simple exponential smoothing** when \(\theta_1 = \alpha - 1\)
+
+```python
+# Simulate ARIMA(0,1,1) - Random walk with MA(1) error
+np.random.seed(42)
+n = 200
+e = np.random.normal(0, 1, n)
+y_arima011 = np.zeros(n)
+
+theta = 0.5
+for t in range(1, n):
+    y_arima011[t] = y_arima011[t-1] + e[t] + theta * e[t-1]
+
+plt.figure(figsize=(12, 5))
+plt.plot(y_arima011)
+plt.title('ARIMA(0,1,1) Process')
 plt.xlabel('Time')
 plt.ylabel('Value')
 plt.grid(alpha=0.3)
 plt.show()
 
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-plot_acf(arma11, lags=20, ax=axes[0], title='ACF of ARMA(1,1)')
-plot_pacf(arma11, lags=20, ax=axes[1], title='PACF of ARMA(1,1)')
-plt.tight_layout()
-plt.show()
-```
-
-## ARIMA Models
-
-### ARIMA(p,d,q)
-
-**ARMA on differenced data**:
-
-1. Difference the series d times: \(y_t' = \nabla^d y_t\)
-2. Apply ARMA(p,q) to \(y_t'\)
-
-**Full model**:
-\[
-\phi(B) \nabla^d y_t = \theta(B) \epsilon_t
-\]
-
-### Components
-
-- **p**: Order of AR component
-- **d**: Number of differences (integration order)
-- **q**: Order of MA component
-
-### Common ARIMA Models
-
-| Model | Meaning | Use Case |
-|-------|---------|----------|
-| ARIMA(1,0,0) | AR(1) | Short-term autocorrelation |
-| ARIMA(0,1,1) | Random walk + MA(1) | Non-seasonal, trending data |
-| ARIMA(1,1,1) | General purpose | Most common starting point |
-| ARIMA(0,1,0) | Random walk | Stock prices |
-| ARIMA(0,0,1) | MA(1) | White noise + shock |
-
-### Model Selection Rules
-
-**ACF and PACF Patterns**:
-
-| ACF Pattern | PACF Pattern | Suggested Model |
-|-------------|--------------|------------------|
-| Cuts off after q | Decays | MA(q) |
-| Decays | Cuts off after p | AR(p) |
-| Decays | Decays | ARMA(p,q) |
-| All zero | All zero | White noise |
-
-**After Differencing**:
-1. If still not stationary: Increase d
-2. If ACF cuts off: MA model
-3. If PACF cuts off: AR model
-4. If both decay: ARMA model
-
-## Estimation Methods
-
-### Maximum Likelihood Estimation (MLE)
-
-**Most common method**
-
-Maximizes log-likelihood:
-\[
-\log L(\phi, \theta, \sigma^2) = -\frac{n}{2}\log(2\pi) - \frac{n}{2}\log(\sigma^2) - \frac{1}{2\sigma^2}\sum_{t=1}^n \epsilon_t^2
-\]
-
-```python
-from statsmodels.tsa.arima.model import ARIMA
-
-# Fit ARIMA(1,1,1)
-model = ARIMA(ts, order=(1, 1, 1))
+# Fit model
+model = ARIMA(y_arima011, order=(0, 1, 1))
 results = model.fit()
-
 print(results.summary())
-print(f"\nAR coefficient: {results.arparams}")
-print(f"MA coefficient: {results.maparams}")
-print(f"Log-likelihood: {results.llf}")
-print(f"AIC: {results.aic}")
-print(f"BIC: {results.bic}")
 ```
+
+## Model Selection
 
 ### Information Criteria
 
-**AIC (Akaike Information Criterion)**:
-\[
-AIC = -2\log L + 2k
-\]
+**1. Akaike Information Criterion (AIC)**:
 
-**BIC (Bayesian Information Criterion)**:
 \[
-BIC = -2\log L + k\log(n)
+\text{AIC} = -2\log(L) + 2k
 \]
 
 Where:
 - \(L\): Maximum likelihood
-- \(k\): Number of parameters
-- \(n\): Sample size
+- \(k\): Number of parameters (\(p + q + 1\))
 
-**Lower is better**: Balances fit and complexity
+**2. Bayesian Information Criterion (BIC)**:
 
-**BIC penalizes complexity more** than AIC
+\[
+\text{BIC} = -2\log(L) + k \log(n)
+\]
 
-## Implementation
+Where \(n\) is sample size
 
-### Manual ARIMA Fitting
+**Selection rule**: Choose model with **minimum** AIC or BIC
 
-```python
-import pandas as pd
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-import matplotlib.pyplot as plt
+**BIC vs AIC**:
+- BIC penalizes complexity more heavily
+- BIC tends to select simpler models
+- AIC better for prediction
+- BIC better for true model selection
 
-# Example: Monthly temperatures
-np.random.seed(42)
-t = np.arange(120)
-trend = 0.1 * t
-seasonal = 10 * np.sin(2 * np.pi * t / 12)
-noise = np.random.normal(0, 2, 120)
-temps = 20 + trend + seasonal + noise
-
-ts = pd.Series(temps, index=pd.date_range('2015-01', periods=120, freq='M'))
-
-# Step 1: Plot
-plt.figure(figsize=(12, 4))
-plt.plot(ts)
-plt.title('Monthly Temperature Data')
-plt.ylabel('Temperature (°C)')
-plt.grid(alpha=0.3)
-plt.show()
-
-# Step 2: Check stationarity
-from statsmodels.tsa.stattools import adfuller
-result = adfuller(ts)
-print(f"ADF p-value: {result[1]:.4f}")
-
-# Step 3: Difference if needed
-ts_diff = ts.diff().dropna()
-result = adfuller(ts_diff)
-print(f"After differencing, p-value: {result[1]:.4f}")
-
-# Step 4: Plot ACF and PACF
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-plot_acf(ts_diff, lags=20, ax=axes[0])
-plot_pacf(ts_diff, lags=20, ax=axes[1])
-plt.tight_layout()
-plt.show()
-
-# Step 5: Fit model (starting with ARIMA(1,1,1))
-model = ARIMA(ts, order=(1, 1, 1))
-results = model.fit()
-print(results.summary())
-
-# Step 6: Diagnostics
-results.plot_diagnostics(figsize=(12, 8))
-plt.tight_layout()
-plt.show()
-```
-
-### Automated Model Selection
-
-```python
-import pmdarima as pm
-
-# Auto ARIMA (finds best p, d, q)
-auto_model = pm.auto_arima(
-    ts,
-    start_p=0, start_q=0,
-    max_p=5, max_q=5,
-    d=None,  # Let it find optimal d
-    seasonal=True,
-    m=12,  # Seasonal period
-    stepwise=True,  # Faster
-    suppress_warnings=True,
-    error_action='ignore',
-    trace=True  # Print search progress
-)
-
-print(auto_model.summary())
-print(f"\nBest model: ARIMA{auto_model.order}")
-```
-
-### Grid Search
+### Grid Search for Best ARIMA
 
 ```python
 import itertools
+import warnings
+warnings.filterwarnings('ignore')
 
-def find_best_arima(ts, p_range, d_range, q_range):
+def find_best_arima(y, max_p=3, max_d=2, max_q=3):
     """
     Grid search for best ARIMA model
     """
     best_aic = np.inf
-    best_order = None
-    best_model = None
-    
-    # Generate all combinations
-    orders = list(itertools.product(p_range, d_range, q_range))
+    best_bic = np.inf
+    best_order_aic = None
+    best_order_bic = None
     
     results = []
     
-    for order in orders:
+    # Generate all combinations
+    p_values = range(0, max_p + 1)
+    d_values = range(0, max_d + 1)
+    q_values = range(0, max_q + 1)
+    
+    for p, d, q in itertools.product(p_values, d_values, q_values):
+        if p == 0 and q == 0:
+            continue  # Skip (0,d,0)
+        
         try:
-            model = ARIMA(ts, order=order)
+            model = ARIMA(y, order=(p, d, q))
             fitted = model.fit()
             
             results.append({
-                'order': order,
-                'aic': fitted.aic,
-                'bic': fitted.bic,
-                'mse': np.mean(fitted.resid**2)
+                'order': (p, d, q),
+                'AIC': fitted.aic,
+                'BIC': fitted.bic,
+                'params': len(fitted.params)
             })
             
             if fitted.aic < best_aic:
                 best_aic = fitted.aic
-                best_order = order
-                best_model = fitted
+                best_order_aic = (p, d, q)
+            
+            if fitted.bic < best_bic:
+                best_bic = fitted.bic
+                best_order_bic = (p, d, q)
                 
         except:
             continue
     
-    results_df = pd.DataFrame(results).sort_values('aic')
-    print("Top 5 models by AIC:")
-    print(results_df.head())
+    # Create DataFrame
+    df_results = pd.DataFrame(results)
+    df_results = df_results.sort_values('AIC').head(10)
     
-    print(f"\nBest model: ARIMA{best_order}")
-    print(f"AIC: {best_aic:.2f}")
+    print("Top 10 Models by AIC:")
+    print(df_results.to_string(index=False))
+    print(f"\nBest model by AIC: ARIMA{best_order_aic}")
+    print(f"Best model by BIC: ARIMA{best_order_bic}")
     
-    return best_model, results_df
+    return best_order_aic, best_order_bic
 
-# Search over reasonable ranges
-best_model, results = find_best_arima(
-    ts,
-    p_range=range(0, 3),
-    d_range=range(0, 2),
-    q_range=range(0, 3)
+# Example usage
+np.random.seed(42)
+y_test = arma_generate_sample([1, -0.6], [1, 0.4], nsample=200, scale=1)
+
+best_aic, best_bic = find_best_arima(y_test, max_p=3, max_d=1, max_q=3)
+```
+
+### Auto ARIMA
+
+**Automated model selection** using stepwise algorithm:
+
+```python
+from pmdarima import auto_arima
+
+# Automatic ARIMA model selection
+auto_model = auto_arima(
+    y_test,
+    start_p=0, start_q=0,
+    max_p=5, max_q=5,
+    d=None,  # Auto-detect differencing
+    seasonal=False,
+    stepwise=True,
+    suppress_warnings=True,
+    information_criterion='aic',
+    trace=True
 )
+
+print("\nAuto ARIMA Results:")
+print(auto_model.summary())
+print(f"\nSelected model: ARIMA{auto_model.order}")
+```
+
+## Parameter Estimation
+
+### Maximum Likelihood Estimation (MLE)
+
+**Likelihood function** for ARIMA:
+
+\[
+L(\phi, \theta, \sigma^2 | y) = \prod_{t=1}^{n} f(y_t | y_{t-1}, ..., y_1; \phi, \theta, \sigma^2)
+\]
+
+**Objective**: Maximize \(L\) (or minimize \(-\log L\))
+
+**Optimization**: Numerical methods (BFGS, Newton-Raphson)
+
+### Standard Errors
+
+**Asymptotic standard errors** from Hessian matrix:
+
+\[
+\text{SE}(\hat{\theta}) \approx \sqrt{\text{diag}(H^{-1})}
+\]
+
+Where \(H\) is the Hessian of \(-\log L\)
+
+### Confidence Intervals
+
+**95% CI for parameters**:
+
+\[
+\hat{\theta} \pm 1.96 \times \text{SE}(\hat{\theta})
+\]
+
+```python
+# Fit model and extract parameter details
+model = ARIMA(y_test, order=(1, 0, 1))
+results = model.fit()
+
+print("\nParameter Estimates:")
+print(results.params)
+
+print("\nStandard Errors:")
+print(results.bse)
+
+print("\n95% Confidence Intervals:")
+print(results.conf_int())
+
+print("\nt-statistics:")
+print(results.tvalues)
+
+print("\np-values:")
+print(results.pvalues)
 ```
 
 ## Model Diagnostics
 
 ### Residual Analysis
 
-**Residuals should be white noise**:
+**Good model**: Residuals should be white noise
+- Mean ≈ 0
+- Constant variance
+- No autocorrelation
+- Normally distributed
 
 ```python
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+# Residual plot
 residuals = results.resid
-
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-
-# Time series plot
 axes[0, 0].plot(residuals)
-axes[0, 0].axhline(0, color='r', linestyle='--')
+axes[0, 0].axhline(y=0, color='r', linestyle='--')
 axes[0, 0].set_title('Residuals Over Time')
+axes[0, 0].set_xlabel('Time')
+axes[0, 0].set_ylabel('Residual')
 axes[0, 0].grid(alpha=0.3)
 
 # Histogram
-axes[0, 1].hist(residuals, bins=30, edgecolor='black')
+axes[0, 1].hist(residuals, bins=30, edgecolor='black', alpha=0.7)
 axes[0, 1].set_title('Histogram of Residuals')
 axes[0, 1].set_xlabel('Residual')
+axes[0, 1].set_ylabel('Frequency')
 
-# ACF
+# ACF of residuals
+from statsmodels.graphics.tsaplots import plot_acf
 plot_acf(residuals, lags=20, ax=axes[1, 0])
 axes[1, 0].set_title('ACF of Residuals')
 
@@ -526,67 +546,71 @@ axes[1, 0].set_title('ACF of Residuals')
 from scipy import stats
 stats.probplot(residuals, dist="norm", plot=axes[1, 1])
 axes[1, 1].set_title('Q-Q Plot')
-axes[1, 1].grid(alpha=0.3)
 
 plt.tight_layout()
 plt.show()
 ```
 
-### Statistical Tests
+### Ljung-Box Test
 
-**Ljung-Box Test** (residuals are white noise):
+**Tests for autocorrelation in residuals**:
 
 ```python
 from statsmodels.stats.diagnostic import acorr_ljungbox
 
-lb_test = acorr_ljungbox(residuals, lags=10, return_df=True)
+lb_test = acorr_ljungbox(residuals, lags=[10, 20, 30], return_df=True)
+print("\nLjung-Box Test:")
 print(lb_test)
 
 if (lb_test['lb_pvalue'] > 0.05).all():
-    print("\n✓ Residuals are white noise")
+    print("\n✓ Residuals appear to be white noise")
 else:
-    print("\n✗ Residuals show autocorrelation")
+    print("\n✗ Significant autocorrelation in residuals")
 ```
 
-**Jarque-Bera Test** (normality):
+### Normality Tests
 
 ```python
-from scipy.stats import jarque_bera
+from scipy.stats import jarque_bera, shapiro
 
+# Jarque-Bera test
 jb_stat, jb_pvalue = jarque_bera(residuals)
-print(f"Jarque-Bera test: statistic={jb_stat:.4f}, p-value={jb_pvalue:.4f}")
+print(f"\nJarque-Bera Test:")
+print(f"  Statistic: {jb_stat:.4f}")
+print(f"  p-value: {jb_pvalue:.4f}")
 
 if jb_pvalue > 0.05:
-    print("✓ Residuals are normally distributed")
+    print("  ✓ Residuals appear normally distributed")
 else:
-    print("✗ Residuals are not normally distributed")
+    print("  ✗ Residuals may not be normally distributed")
+
+# Shapiro-Wilk test
+sw_stat, sw_pvalue = shapiro(residuals)
+print(f"\nShapiro-Wilk Test:")
+print(f"  Statistic: {sw_stat:.4f}")
+print(f"  p-value: {sw_pvalue:.4f}")
 ```
 
 ## Summary
 
-**Model Identification Guide**:
+**Key Concepts**:
 
-| Step | Action | Tool |
-|------|--------|------|
-| 1 | Plot series | Visual inspection |
-| 2 | Test stationarity | ADF test |
-| 3 | Difference if needed | \(d = 1\) or \(d = 2\) |
-| 4 | Plot ACF/PACF | Identify p and q |
-| 5 | Fit model | MLE |
-| 6 | Check diagnostics | Residual tests |
-| 7 | Compare models | AIC/BIC |
-| 8 | Forecast | If adequate |
+✅ **AR(p)**: Current value = linear combination of past \(p\) values + error
+✅ **MA(q)**: Current value = linear combination of past \(q\) errors + error
+✅ **ARMA(p,q)**: Combines both AR and MA components
+✅ **ARIMA(p,d,q)**: ARMA on differenced series
+✅ **Model selection**: Use AIC/BIC or auto_arima
+✅ **Diagnostics**: Check residuals for white noise
 
-**Key Takeaways**:
-
-✅ **AR**: PACF cuts off at p
-✅ **MA**: ACF cuts off at q
-✅ **ARMA**: Both decay gradually
-✅ **Difference first**: Make stationary before identifying p,q
-✅ **Start simple**: ARIMA(1,1,1) is good baseline
-✅ **Use AIC/BIC**: For model comparison
-✅ **Check residuals**: Must be white noise
+**Workflow**:
+1. Plot data → Visual inspection
+2. Check stationarity → ADF test
+3. Transform → Differencing if needed
+4. Identify orders → ACF/PACF plots
+5. Fit candidates → Compare AIC/BIC
+6. Diagnostics → Residual analysis
+7. Forecast → Generate predictions
 
 ## Next Section
 
-Continue to [Forecasting](06-forecasting.md) to learn how to generate predictions and confidence intervals.
+Continue to [Seasonal ARIMA](04-seasonal-arima.md) to learn how to handle seasonal patterns in time series data.
