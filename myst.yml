@@ -5,11 +5,14 @@ project:
   # title:
   # description:
   # keywords: []
-  # authors: []
-  # github:
+  authors:
+    - name: Dr. Khalil Chebil
+      email: khalil.chebil@insat.ucar.tn
+  github: https://github.com/chebil/BigData
   # To autogenerate a Table of Contents, run "myst init --write-toc"
 site:
   template: book-theme
-  # options:
+  options:
+    logo_text: Dr. Khalil Chebil
   #   favicon: favicon.ico
   #   logo: site_logo.png
