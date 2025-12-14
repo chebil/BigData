@@ -15,7 +15,7 @@ services:
       - bigdata-network
 
   spark-master:
-    image: bitnami/spark:3.4
+    image: apache/spark:3.5.0
     container_name: spark-master
     environment:
       - SPARK_MODE=master
@@ -26,17 +26,19 @@ services:
     ports:
       - "8080:8080"
       - "7077:7077"
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     networks:
       - bigdata-network
 
   spark-worker:
-    image: bitnami/spark:3.4
+    image: apache/spark:3.5.0
     container_name: spark-worker
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=2G
       - SPARK_WORKER_CORES=2
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     depends_on:
       - spark-master
     networks:
